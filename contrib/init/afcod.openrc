@@ -1,0 +1,92 @@
+#!/sbin/openrc-run
+
+# backward compatibility for existing gentoo layout 
+#
+if [ -d "/var/lib/afco/.afco" ]; then
+	AFCOD_DEFAULT_DATADIR="/var/lib/afco/.afco"
+else
+	AFCOD_DEFAULT_DATADIR="/var/lib/afcod"
+fi
+
+AFCOD_CONFIGFILE=${AFCOD_CONFIGFILE:-/etc/afco/afco.conf}
+AFCOD_PIDDIR=${AFCOD_PIDDIR:-/var/run/afcod}
+AFCOD_PIDFILE=${AFCOD_PIDFILE:-${AFCOD_PIDDIR}/afcod.pid}
+AFCOD_DATADIR=${AFCOD_DATADIR:-${AFCOD_DEFAULT_DATADIR}}
+AFCOD_USER=${AFCOD_USER:-${AFCO_USER:-afco}}
+AFCOD_GROUP=${AFCOD_GROUP:-afco}
+AFCOD_BIN=${AFCOD_BIN:-/usr/bin/afcod}
+AFCOD_NICE=${AFCOD_NICE:-${NICELEVEL:-0}}
+AFCOD_OPTS="${AFCOD_OPTS:-${AFCO_OPTS}}"
+
+name="AFCO Core Daemon"
+description="AFCO cryptocurrency P2P network daemon"
+
+command="/usr/bin/afcod"
+command_args="-pid=\"${AFCOD_PIDFILE}\" \
+		-conf=\"${AFCOD_CONFIGFILE}\" \
+		-datadir=\"${AFCOD_DATADIR}\" \
+		-daemon \
+		${AFCOD_OPTS}"
+
+required_files="${AFCOD_CONFIGFILE}"
+start_stop_daemon_args="-u ${AFCOD_USER} \
+			-N ${AFCOD_NICE} -w 2000"
+pidfile="${AFCOD_PIDFILE}"
+
+# The retry schedule to use when stopping the daemon. Could be either
+# a timeout in seconds or multiple signal/timeout pairs (like
+# "SIGKILL/180 SIGTERM/300")
+retry="${AFCOD_SIGTERM_TIMEOUT}"
+
+depend() {
+	need localmount net
+}
+
+# verify
+# 1) that the datadir exists and is writable (or create it)
+# 2) that a directory for the pid exists and is writable
+# 3) ownership and permissions on the config file
+start_pre() {
+	checkpath \
+	-d \
+	--mode 0750 \
+	--owner "${AFCOD_USER}:${AFCOD_GROUP}" \
+	"${AFCOD_DATADIR}"
+
+	checkpath \
+	-d \
+	--mode 0755 \
+	--owner "${AFCOD_USER}:${AFCOD_GROUP}" \
+	"${AFCOD_PIDDIR}"
+
+	checkpath -f \
+	-o ${AFCOD_USER}:${AFCOD_GROUP} \
+	-m 0660 \
+	${AFCOD_CONFIGFILE}
+
+	checkconfig || return 1
+}
+
+checkconfig()
+{
+	if ! grep -qs '^rpcpassword=' "${AFCOD_CONFIGFILE}" ; then
+		eerror ""
+		eerror "ERROR: You must set a secure rpcpassword to run afcod."
+		eerror "The setting must appear in ${AFCOD_CONFIGFILE}"
+		eerror ""
+		eerror "This password is security critical to securing wallets "
+		eerror "and must not be the same as the rpcuser setting."
+		eerror "You can generate a suitable random password using the following "
+		eerror "command from the shell:"
+		eerror ""
+		eerror "bash -c 'tr -dc a-zA-Z0-9 < /dev/urandom | head -c32 && echo'"
+		eerror ""
+		eerror "It is recommended that you also set alertnotify so you are "
+		eerror "notified of problems:"
+		eerror ""
+		eerror "ie: alertnotify=echo %%s | mail -s \"AFCO Alert\"" \
+			"admin@foo.com"
+		eerror ""
+		return 1
+	fi
+}

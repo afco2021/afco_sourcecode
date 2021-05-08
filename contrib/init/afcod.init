@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+#
+#  afcod The afco core server.
+#
+#
+# chkconfig: 345 80 20
+# description: afcod
+# processname: afcod
+#
+
+# Source function library.
+. /etc/init.d/functions
+
+# you can override defaults in /etc/sysconfig/afcod, see below
+if [ -f /etc/sysconfig/afcod ]; then
+        . /etc/sysconfig/afcod
+fi
+
+RETVAL=0
+
+prog=afcod
+# you can override the lockfile via AFCOD_LOCKFILE in /etc/sysconfig/afcod
+lockfile=${AFCOD_LOCKFILE-/var/lock/subsys/afcod}
+
+# afcod defaults to /usr/bin/afcod, override with AFCOD_BIN
+afcod=${AFCOD_BIN-/usr/bin/afcod}
+
+# afcod opts default to -disablewallet, override with AFCOD_OPTS
+afcod_opts=${AFCOD_OPTS--disablewallet}
+
+start() {
+    echo -n $"Starting $prog: "
+    daemon $DAEMONOPTS $afcod $afcod_opts
+    RETVAL=$?
+    echo
+    [ $RETVAL -eq 0 ] && touch $lockfile
+    return $RETVAL
+}
+
+stop() {
+    echo -n $"Stopping $prog: "
+    killproc $prog -t600
+    RETVAL=$?
+    echo
+    [ $RETVAL -eq 0 ] && rm -f $lockfile
+    return $RETVAL
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    status)
+        status $prog
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    *)
+        echo "Usage: service $prog {start|stop|status|restart}"
+        exit 1
+        ;;
+esac

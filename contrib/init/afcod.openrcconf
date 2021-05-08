@@ -1,0 +1,33 @@
+# /etc/conf.d/afcod: config file for /etc/init.d/afcod
+
+# Config file location
+#AFCOD_CONFIGFILE="/etc/afco/afco.conf"
+
+# What directory to write pidfile to?  (created and owned by $AFCOD_USER)
+#AFCOD_PIDDIR="/var/run/afcod"
+
+# What filename to give the pidfile
+#AFCOD_PIDFILE="${AFCOD_PIDDIR}/afcod.pid"
+
+# Where to write afcod data (be mindful that the blockchain is large)
+#AFCOD_DATADIR="/var/lib/afcod"
+
+# User and group to own afcod process
+#AFCOD_USER="afco"
+#AFCOD_GROUP="afco"
+
+# Path to afcod executable
+#AFCOD_BIN="/usr/bin/afcod"
+
+# Nice value to run afcod under
+#AFCOD_NICE=0
+
+# Additional options (avoid -conf and -datadir, use flags above)
+#AFCOD_OPTS=""
+
+# The timeout in seconds OpenRC will wait for afcod to terminate
+# after a SIGTERM has been raised.
+# Note that this will be mapped as argument to start-stop-daemon's
+# '--retry' option, which means you can specify a retry schedule
+# here. For more information see man 8 start-stop-daemon.
+AFCOD_SIGTERM_TIMEOUT=600
